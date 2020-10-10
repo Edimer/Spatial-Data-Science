@@ -6,10 +6,11 @@ Repositorio para análisis de datos espaciales con R.
 <img src = "https://www.esri.com/content/dam/esrisites/en-us/arcgis/what-is-gis/images/overview-banner-layerstack-wide.png"/>
 </center>
 
-# Recursos de información para el curso
+# Recursos de información importante
 
 - [Diva-GIS](https://2.bp.blogspot.com/-GlG4gO9pnqI/UKTXdkJO8QI/AAAAAAAAAR4/ABV7ilCYy0c/s1600/fig0.jpg)
 - [Spatial Data Science with R](https://rspatial.org/)
+- [The PREDICTS project](https://www.predicts.org.uk/)
 
 # Bibliotecas de R
 

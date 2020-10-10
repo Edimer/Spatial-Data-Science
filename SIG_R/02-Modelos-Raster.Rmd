@@ -36,7 +36,7 @@ library(raster)
 # Datos Solenopsis
 
 - Ver anexos para obtener código de la base de datos que se carga a continuación.
-- Estos datos están en [este directorio de Github.]()
+- Estos datos están en [este directorio de Github.](https://github.com/Edimer/Spatial-Data-Science/blob/main/SIG_R/data/solenopsis.csv)
 
 ```{r}
 datos <- read_csv("data/solenopsis.csv")
