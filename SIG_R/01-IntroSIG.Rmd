@@ -101,3 +101,7 @@ plot(africa2)
 plot(africa3)
 ```
 
+# Recursos de información
+
+- [Diva-GIS](https://2.bp.blogspot.com/-GlG4gO9pnqI/UKTXdkJO8QI/AAAAAAAAAR4/ABV7ilCYy0c/s1600/fig0.jpg)
+- []()
