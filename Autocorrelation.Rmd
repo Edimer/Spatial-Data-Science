@@ -1,0 +1,16 @@
+---
+title: "Autocorrelación Espacial"
+output:
+  html_notebook:
+    toc: true
+---
+
+# Ley de Tobler
+
+> "Todas las cosas están relacionadas entre sí, pero las cosas más próximas en el espacio tienen una relación mayor que las distantes."
+Waldo Tobler
+
+```{r}
+
+```
+
