@@ -13,7 +13,7 @@ Repositorio para análisis de datos espaciales con R.
 
 # Bibliotecas de R
 
-```{r}
+```r
 library(sf)
 library(raster)
 library(rworldxtra)
