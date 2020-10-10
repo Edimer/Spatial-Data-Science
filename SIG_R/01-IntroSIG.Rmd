@@ -1,0 +1,103 @@
+---
+title: "Sistemas de Información Geográfica con R"
+author: "Edimer David Jaramillo"
+output:
+  html_notebook:
+    toc: true
+    toc_float:
+      smooth_scroll: true
+      collapsed: false
+    code_folding: hide
+    highlight: breezedark
+---
+
+```{r}
+knitr::opts_chunk$set(fig.align = "center",
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.width = 9)
+```
+
+
+- Notas tomadas del curso ["Sistemas de Información Geográfica en R (SIG en R)" con Derek Corcoran.](https://www.youtube.com/channel/UCOb-12wuWVtrWfqI3p8HL4w)
+
+# Generalidades
+
+- Datos
+  - Datos de captura remota (satelites lidar)
+  - Datos modelados (SDM)
+  - Datos de expertos
+  - Planes futuros
+- Formatos
+  - Datos vectoriales (.shp --> Shapefiles)
+    - Puntos --> Ciudades, eventos, sitio de muestreo
+    - Líneas
+    - Polígonos
+  - Datos en grilla (raster)
+  
+# Data countriesHigh
+
+```{r}
+library(sf)
+library(tidyverse)
+library(rworldxtra)
+data("countriesHigh")
+class(countriesHigh)
+```
+
+- **Transformación a objeto sf (simple feature):** este tipo de objeto es más moderno que el tipo *sp* para manejar datos espaciales. También facilita la conversión a data.frame, de tal manera que se facilita el manejo a través del *tidyverse*.
+
+```{r}
+mundo <- st_as_sf(countriesHigh)
+class(mundo)
+```
+
+- **Gráfico con gggplot2:**
+
+```{r, fig.align="center"}
+mundo %>% 
+  ggplot(aes(fill = POP_EST)) +
+  geom_sf() +
+  labs(title = "Población mundial")
+```
+
+- **Filtrando sólo África:**
+
+```{r}
+library(viridis)
+mundo %>% 
+  filter(continent == "Africa") %>% 
+  ggplot(aes(fill = POP_EST)) +
+  geom_sf() +
+  scale_fill_viridis_c()
+```
+
+- **Exportando subconjunto de datos como .shp:**
+
+```{r}
+mundo %>% 
+  filter(continent == "Africa") %>% 
+  dplyr::select(NAME, POP_EST, GDP_MD_EST, GLOCAF) ->
+  africa
+write_sf(africa, "ejemplo_africa.shp")
+```
+
+- **Lectura de archivo shape:**
+
+```{r}
+# Función biblioteca raster
+africa2 <- shapefile("ejemplo_africa.shp")
+class(africa2)
+
+#Función biblioteca sf
+africa3 <- read_sf("ejemplo_africa.shp") 
+class(africa3)
+```
+
+- **Gráficos por defecto con la función plot():**
+
+```{r}
+plot(africa2)
+plot(africa3)
+```
+

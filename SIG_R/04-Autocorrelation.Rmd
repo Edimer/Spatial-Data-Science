@@ -5,12 +5,29 @@ output:
     toc: true
 ---
 
+# Bibliotecas
+
+```{r}
+library(tidyverse)
+library(sp)
+library(sf)
+library(gstat)
+library(rgdal)
+library(rworldxtra)
+library(raster)
+```
+
+
 # Ley de Tobler
 
 > "Todas las cosas están relacionadas entre sí, pero las cosas más próximas en el espacio tienen una relación mayor que las distantes."
 Waldo Tobler
 
-```{r}
+# Datos
 
+```{r}
+data("meuse") # De la biblioteca sp
+meuse
 ```
+
 
