@@ -1,0 +1,25 @@
+---
+title: "Sistemas de Información Geográfica con R"
+subtitle: "Modelos con Raster"
+author: "Edimer David Jaramillo"
+output:
+  html_notebook:
+    toc: true
+    toc_float:
+      smooth_scroll: true
+      collapsed: false
+    code_folding: hide
+    highlight: breezedark
+---
+
+```{r}
+knitr::opts_chunk$set(fig.align = "center",
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.width = 9)
+```
+
+
+- Notas tomadas del curso ["Sistemas de Información Geográfica en R (SIG en R)" con Derek Corcoran.](https://www.youtube.com/watch?v=9e-zDQPGhBo&ab_channel=DerekCorcoran)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/9e-zDQPGhBo" frameborder="0" allowfullscreen></iframe>

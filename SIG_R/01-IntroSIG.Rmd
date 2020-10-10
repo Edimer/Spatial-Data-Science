@@ -1,5 +1,6 @@
 ---
 title: "Sistemas de Información Geográfica con R"
+subtitle: "Introducción"
 author: "Edimer David Jaramillo"
 output:
   html_notebook:

@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/673433/8af62607b0ee41fc8258484255da3319
+bundleId: https://api.rpubs.com/api/v1/document/673433/8af62607b0ee41fc8258484255da3319
+url: http://rpubs.com/Edimer/673433
+when: 1602360230.09965
