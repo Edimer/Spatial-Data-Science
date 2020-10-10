@@ -33,10 +33,10 @@ library(sf)
 library(raster)
 ```
 
-# Datos Formicidae
+# Datos Formicidae (Hormigas)
 
 <center>
-<img src = "img/hormiga.PNG" />
+<img src = "img/hormiga.gif" />
 </center>
 
 - Ver anexos para obtener código de la base de datos que se carga a continuación.
