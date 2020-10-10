@@ -9,7 +9,7 @@ Repositorio para análisis de datos espaciales con R.
 # Recursos de información para el curso
 
 - [Diva-GIS](https://2.bp.blogspot.com/-GlG4gO9pnqI/UKTXdkJO8QI/AAAAAAAAAR4/ABV7ilCYy0c/s1600/fig0.jpg)
-- []()
+- [Spatial Data Science with R](https://rspatial.org/)
 
 # Bibliotecas de R
 
@@ -18,3 +18,8 @@ library(sf)
 library(raster)
 library(rworldxtra)
 ```
+
+# Material
+
+El siguiente material lo he construido siguiendo las clases desde Youtube.
+- [SIG con R: Clase 01 - Introducción](https://rpubs.com/Edimer/673433)
