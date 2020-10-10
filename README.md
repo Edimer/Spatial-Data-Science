@@ -18,3 +18,9 @@ library(sf)
 library(raster)
 library(rworldxtra)
 ```
+
+```r
+PKG_URL <- "https://github.com/microsoft/LightGBM/releases/download/v3.0.0/lightgbm-3.0.0-r-cran.tar.gz"
+
+remotes::install_url(PKG_URL)
+```
