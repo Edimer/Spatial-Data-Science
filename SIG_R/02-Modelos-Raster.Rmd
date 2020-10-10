@@ -23,3 +23,50 @@ knitr::opts_chunk$set(fig.align = "center",
 - Notas tomadas del curso ["Sistemas de Información Geográfica en R (SIG en R)" con Derek Corcoran.](https://www.youtube.com/watch?v=9e-zDQPGhBo&ab_channel=DerekCorcoran)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/9e-zDQPGhBo" frameborder="0" allowfullscreen></iframe>
+
+# Bibliotecas
+
+```{r}
+library(rworldxtra)
+library(tidyverse)
+library(sf)
+library(raster)
+```
+
+# Datos Solenopsis
+
+- Ver anexos para obtener código de la base de datos que se carga a continuación.
+- Estos datos están en [este directorio de Github.]()
+
+```{r}
+datos <- read_csv("data/solenopsis.csv")
+datos
+```
+
+# Anexos
+
+- En el ejemplo de clase se trabaja con la especie Bombus affinis (abejorros), sin embargo, obtuve directamente la base de datos de [PREDICTS database](https://data.nhm.ac.uk/dataset/the-2016-release-of-the-predicts-database) y voy a trabajar con el género de hormigas [*Solenopsis*,](https://es.wikipedia.org/wiki/Solenopsis) también conocida como hormiga colorada o de fuego.
+-  En este caso filtro información sólo para Colombia.
+- Se filtran datos sólo de abundancia de especies.
+- Mantengo sólo las siguientes variables:
+  - Reference, Study_common_taxon, Site_name, Sampling_effort, Longitud, Latitude, Species, Measurement, Effort_corrected_measurement.
+
+```{r}
+# Base de datos total con más de 3 millones de registros
+datos_total <- fread("database.csv", encoding = "UTF-8")
+
+# Filtro solenopsis para Colombia: 551 registros de abundancia
+datos_colombia <- datos_total %>% 
+  filter(Country == "Colombia") %>% 
+  filter(Genus == "Solenopsis") %>%  
+  filter(Diversity_metric_type == "Abundance") %>% 
+  select(Reference, Study_common_taxon, Site_name, Sampling_effort,
+         Longitude, Latitude, Species, Measurement, 
+         Effort_corrected_measurement) 
+
+# Exportando datos de solenopsis
+write.csv(datos_colombia, file = "solenopsis.csv", row.names = FALSE,
+          fileEncoding = "UTF-8")
+```
+
+
