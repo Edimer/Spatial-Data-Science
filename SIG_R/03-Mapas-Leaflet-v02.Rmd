@@ -63,10 +63,6 @@ data_to %>%
 data_to_clean
 ```
 
-```{r}
-data_to_clean
-```
-
 # Marcadores {.tabset .tabset-fade .tabset-pills}
 
 ## Inicial
