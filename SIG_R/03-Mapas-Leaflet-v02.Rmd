@@ -1,0 +1,380 @@
+---
+title: "Sistemas de Información Geográfica con R"
+author: "Edimer David Jaramillo"
+subtitle: "Mapas interactivos con Leaflet"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      smooth_scroll: yes
+      collapsed: no
+    code_folding: hide
+    highlight: breezedark
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+- Notas tomadas del curso ["Sistemas de Información Geográfica en R (SIG en R)" con Derek Corcoran.](https://www.youtube.com/watch?v=yKUM45-LuHk&ab_channel=DerekCorcoran)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/yKUM45-LuHk" frameborder="0" allowfullscreen></iframe>
+
+# Bibliotecas
+
+```{r}
+library(leaflet)
+library(leaflet.extras) 
+library(rworldxtra)
+library(tidyverse)
+library(sf)
+library(raster)
+```
+
+# Datos
+
+<center>
+<img src = "https://mir-s3-cdn-cf.behance.net/projects/404/f4079686720035.Y3JvcCw5NzAsNzU5LDExNSwyMjE.png" />
+</center>
+
+- Para este documento voy a trabajar con el oso de anteojos (*Tremarcto ornatus*). La base de datos con el registro de presencias es obtenida del [gbif](https://www.gbif.org/) usando la biblioteca **rgbif** de R.
+
+## Datos gbif
+
+```{r}
+library(rgbif)
+library(Hmisc)
+gbif_to <- occ_search(scientificName = "Tremarctos ornatus",
+                  limit = 5000, return = "data",
+                  hasCoordinate = TRUE)
+
+data_to <- gbif_to$data
+data_to %>% 
+  filter(country == "Colombia") %>% 
+  filter(!duplicated(decimalLatitude, decimalLongitude)) %>% 
+  dplyr::select(scientificName, decimalLatitude, decimalLongitude, kingdom, phylum,
+         family, genus, genericName, stateProvince, year, month, day,
+         eventDate, class, country, occurrenceRemarks, habitat) %>% 
+  mutate(habitat = capitalize(tolower(habitat))) %>% 
+  filter(decimalLongitude > -78) ->
+  data_to_clean
+data_to_clean
+```
+
+```{r}
+data_to_clean
+```
+
+# Marcadores {.tabset .tabset-fade .tabset-pills}
+
+## Inicial
+
+```{r, fig.width=9}
+leaflet() %>% 
+  addTiles()
+```
+
+## Añadir círculos (puntos)
+
+```{r, fig.width=9}
+leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude)
+```
+
+## Círculo - Marcador
+
+```{r, fig.width=9}
+leaflet() %>% 
+  addTiles() %>% 
+  addCircleMarkers(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude)
+```
+
+
+## Añadir marcadores
+
+```{r, fig.width=9}
+leaflet() %>% 
+  addTiles() %>% 
+  addAwesomeMarkers(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude)
+```
+
+# Editando Color y etiquetas {.tabset .tabset-fade .tabset-pills}
+
+- Editando el color por año.
+- Colores disponibles en [ColorBrewer](https://colorbrewer2.org/).
+- Para cambiar el color es posible usar la función colorFactor() con los colores preestablecidos y las etiquetas o niveles (*domain*) a utilizar. En este caso es el mes de observación del oso.
+- El argumento **label** permite controlar la leyenda correspondiente a cada punto cuando.
+
+```{r, fig.width=9}
+# Colores y nombres de etiqueta (leyenda)
+colores <- c('#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c',
+             '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a', '#ffff99', '#b15928')
+meses <- levels(as.factor(data_to_clean$month))
+
+# Cambiando color
+paleta <- colorFactor(palette = colores, domain = meses)
+
+leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fill = 1, label = ~occurrenceRemarks)
+
+```
+
+# Añadir *popup*
+
+- Label: muestra la etiqueta asignada sólo con posar el cursor sobre el punto.
+- Pupup: muestra la etiqueta asignada al dar clic en el punto deseado.
+- Combinando ambos argumentos en un sólo mapa es posible informar de dos variables al mismo tiempo
+
+```{r, fig.width=9}
+leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fill = 1, popup  = ~occurrenceRemarks,
+             label = ~habitat)
+```
+
+# Añadir leyenda
+
+- Es posbible asignar el mapa a un objeto. 
+- A través del pipeline (tubería - %>%) es posible conectar varias instrucciones.
+- Es necesario declarar el grupo (group) ya que en el control de objetos será necesario
+
+```{r, fig.width=9}
+m <- leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = data_to_clean, lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fill = 1, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Meses")
+m <- m %>% 
+  addLegend(data = data_to_clean, position =  "bottomleft", pal = paleta,
+            values = ~month, title = "Meses", opacity = 1,
+            group = "Leyenda")
+m
+```
+
+# Control de objetos
+
+- El control de objetos permite la selección de capas en el mapa.
+- El nombre de las nuevas capas, en este caso "Meses" y "Leyenda", debe coincidir con los nombres declarados previamente.
+
+```{r, fig.width=9}
+m %>% addLayersControl(overlayGroups = c("Meses", "Leyenda"),
+                       options = layersControlOptions(collapsed = TRUE))
+```
+
+
+# Manipulando capas
+
+- En este caso se va a añadir una capa para cada mes.
+- Es necesario para cada mes genera una base de datos.
+
+```{r}
+# Datos para mes 1
+data_mes1 <- data_to_clean %>% 
+  filter(month == 1)
+
+# Mapa para el mes enero
+m1 <- leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = data_mes1, lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fill = 1, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes1")
+m1 <- m1 %>% 
+  addLegend(data = data_mes1, position =  "bottomleft", pal = paleta,
+            values = ~month, title = "Meses", opacity = 1,
+            group = "Leyenda")
+m1
+```
+
+
+- **Ciclo para todos los meses:** para no realizar el proceso manualmente para cada mes, se obtienen los 12 filtros a través de un loop.
+
+```{r}
+mi_lista <- list()
+for (i in 1:12) {
+  mi_lista[[i]] = data_to_clean %>% filter(month == i)
+}
+names(mi_lista) <- paste0("Mes", 1:12)
+```
+
+- **Mapa completo con control sobre cada mes:** sólo agrego los primeros 5 meses a manera de ejemplo.
+
+```{r, fig.width=9}
+mi_mapa <- leaflet() %>% 
+  addTiles() %>% 
+  addCircles(data = mi_lista[[1]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 0.5, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes1") %>% 
+  addCircles(data = mi_lista[[2]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 0.5, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes2") %>%
+  addCircles(data = mi_lista[[3]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 0.5, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes3") %>% 
+addCircles(data = mi_lista[[4]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 0.5, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes4") %>% 
+  addCircles(data = mi_lista[[5]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 0.5, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = "Mes5") 
+mi_mapa 
+```
+- **Agregando capas a través de un loop:** en este caso utilizo las 12 bases de datos, una para cada mes.
+
+```{r}
+nombres <- paste0("Mes", 1:12)
+mi_mapa2 <- leaflet() %>% addTiles()
+for (i in 1:length(mi_lista)) {
+  mi_mapa2 = mi_mapa2 %>% 
+    addCircles(data = mi_lista[[i]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+             color = ~paleta(month), fillOpacity = 1, popup  = ~occurrenceRemarks,
+             label = ~habitat, group = nombres[i])
+}
+mi_mapa2 
+```
+
+- **Controlando cada capa (mes):**
+
+```{r}
+mi_mapa2 %>% 
+  addLegend(data = data_to_clean, position =  "bottomleft", pal = paleta,
+            values = ~month, title = "Meses", opacity = 1,
+            group = "Leyenda") %>% 
+  addLayersControl(overlayGroups = c(nombres, "Leyenda"),
+                       options = layersControlOptions(collapsed = TRUE))
+```
+
+# Editando controles
+
+- Es posible agregar el argumento "basegroups" para seleccionar una sola opción, en este caso un sólo mes.
+- La leyenda la mantengo como "group", sólo los meses los cambio a "basegroups".
+- La función "hideGroup" permite controlar si la leyenda o capa específica aparece seleccionada en el mapa.
+
+```{r}
+mi_mapa2 %>% 
+  addLegend(data = data_to_clean, position =  "bottomleft", pal = paleta,
+            values = ~month, title = "Meses", opacity = 1,
+            group = "Leyenda") %>% 
+  addLayersControl(overlayGroups = c("Leyenda"), baseGroups = nombres, 
+                       options = layersControlOptions(collapsed = TRUE)) %>% 
+  hideGroup("Leyenda")
+```
+
+
+# Densidad por mes
+
+- El argumento "blur" permite controlar detalles del mapa de calor (densidad). Valores bajo (por defecto igual a 1) darán como resultado densidades de mayor intensidad en color.
+- El argumento "radio" permite cambiar el detalle visual de la densidad.
+
+```{r}
+heat_map <- leaflet() %>% addTiles()
+for (i in 1:length(mi_lista)) {
+  heat_map = heat_map %>% 
+    addHeatmap(data = mi_lista[[i]], lat = ~decimalLatitude, lng = ~decimalLongitude,
+               group = nombres[i], blur = 25, radius = 20)
+}
+heat_map %>% 
+  addLayersControl(baseGroups = nombres, 
+                   options = layersControlOptions(collapsed = FALSE))
+```
+
+# Leaflet + Shapefile: polígonos
+
+```{r}
+library(sf)
+africa <- read_sf("ejemplo_africa.shp")
+africa_spatial <- africa %>% as_Spatial()
+regiones_africa <- leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(data = africa_spatial, fillColor = topo.colors(16, alpha = NULL),
+              weight = 1, label = ~NAME, group = "Regiones") %>% 
+  addLayersControl(overlayGroups = "Regiones",
+                   options = layersControlOptions(collapsed = TRUE)) 
+regiones_africa
+```
+
+# Medición de áreas
+
+- Con leaflet es posible medir la longitud de las polilíneas y el área de los polígonos a través de la función "addMeasurePathToolbar".
+- Si se elige la opción "imperial = FALSE" las unidades serán km, de lo contrario serán acres.
+
+```{r}
+areas_africa <- regiones_africa %>% 
+  addMeasurePathToolbar(options = measurePathOptions(imperial = FALSE,
+                                                     minPixelDistance = 100,
+                                                     showDistances = FALSE))
+areas_africa
+```
+
+# Dibujar áreas
+
+- La función "addDrawToolbar" permite incorporar elementos de dibujo o representaicón en el mapa. Es el usuario final quien dispone de dichas opciones.
+- El argumento "showDistances" de la función "addMeasurePathToolbar" igualada a TRUE permitirá medir la longitud de las polilíneas.
+
+```{r}
+regiones_africa2 <- leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(data = africa_spatial, fillColor = topo.colors(16, alpha = NULL),
+              weight = 1, label = ~NAME, group = "Regiones") %>% 
+  addDrawToolbar(targetGroup = "Marinas",
+                 editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions())) %>% 
+  addLayersControl(overlayGroups = c("Regiones", "Marinas"),
+                   options = layersControlOptions(collapsed = TRUE)) %>% 
+  addMeasurePathToolbar(options = measurePathOptions(imperial = FALSE,
+                                                     minPixelDistance = 100,
+                                                     showDistances = TRUE))
+regiones_africa2
+```
+
+# Editor de estilo
+
+- La función addStyleEditor() permite agregar páneles de selección para ajustar detalles estéticos del mapa.
+
+```{r}
+regiones_africa3 <- leaflet() %>% 
+  addTiles() %>% 
+  addPolygons(data = africa_spatial, fillColor = topo.colors(16, alpha = NULL),
+              weight = 1, label = ~NAME, group = "Regiones") %>% 
+  addDrawToolbar(targetGroup = "Marinas",
+                 editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions())) %>% 
+  addLayersControl(overlayGroups = c("Regiones", "Marinas"),
+                   options = layersControlOptions(collapsed = TRUE)) %>% 
+  addMeasurePathToolbar(options = measurePathOptions(imperial = FALSE,
+                                                     minPixelDistance = 100,
+                                                     showDistances = TRUE)) %>% 
+  addStyleEditor()
+regiones_africa3
+```
+
+# Bibliotecas mapedit y mapview
+
+- Con la biblioteca mapview es posible obtener mapas similares a leaflet, con algunas características importantes adicionales.
+- La biblioteca mapedit permite editar los mapas construidos con leaflet y mapview. Lo favorable es que aquellos cambios realizados a través del mouse, serán guardados en el objeto asignado.
+
+```{r}
+library(mapedit)
+library(mapview)
+
+nuevo_mapa <- mapview(africa)
+nuevo_mapa
+```
+
+- **Editando mapa con mapedit:** al ejecutar este comando se abre el mapa en el visor o navegador, podrá ser editado con el mouse y luego dar clic en "done" para salvar los cambios.
+
+```{r}
+mapa2 <- nuevo_mapa %>% 
+  editMap()
+```
+
+
+- Con la opción seleccionada en el mapa se guarda el cambio en el objeto "nuevo_mapa", este objeto se puede manipular de forma independiente.
+
+```{r, eval=FALSE}
+mapa2$drawn %>% plot()
+```
+
