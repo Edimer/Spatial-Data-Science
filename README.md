@@ -25,3 +25,4 @@ library(rworldxtra)
 El siguiente material lo he construido siguiendo las clases desde Youtube.
 - [SIG con R: Clase 01 - Introducción](https://rpubs.com/Edimer/673433)
 - [SIG con R: Clase 02 - Modelos con Raster](https://rpubs.com/Edimer/673524)
+- [SIG con R: Clase 03 - Mapas interactivos con Leaflet](https://rpubs.com/Edimer/673994)
