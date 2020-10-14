@@ -1,9 +1,21 @@
 ---
-title: "Autocorrelación Espacial"
+title: "Sistemas de Información Geográfica con R"
+author: "Edimer David Jaramillo"
+subtitle: "Autocorrelación Espacial"
 output:
   html_notebook:
-    toc: true
+    toc: yes
+    toc_float:
+      smooth_scroll: yes
+      collapsed: no
+    code_folding: hide
+    highlight: breezedark
+    df_print: paged
 ---
+
+- Notas tomadas del curso ["Sistemas de Información Geográfica en R (SIG en R)" con Derek Corcoran.](https://www.youtube.com/watch?v=IYURqbzKVkQ&ab_channel=DerekCorcoran)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/IYURqbzKVkQ" frameborder="0" allowfullscreen></iframe>
 
 # Bibliotecas
 
@@ -23,11 +35,311 @@ library(raster)
 > "Todas las cosas están relacionadas entre sí, pero las cosas más próximas en el espacio tienen una relación mayor que las distantes."
 Waldo Tobler
 
-# Datos
+# Bibliotecas
 
 ```{r}
-data("meuse") # De la biblioteca sp
-meuse
+library(gstat)
+library(raster)
+library(rgdal)
+library(rworldxtra)
+library(sp)
+library(sf)
+library(tidyverse)
 ```
 
+
+# Datos *meuse*
+
+- Datos de ejemplo contenidos en la biblioteca sp.
+- El crs asignado es determinado por las unidades en las cuales está dada la longitud y latitud.
+- En este caso se transforman los datos a *sf* y a *SpatialPoints*.
+
+```{r}
+# Data originakl
+data("meuse") 
+
+# Data sf
+meuse_sf <- meuse %>% st_as_sf(coords = c(1, 2), crs = "+init=epsg:28992")
+
+# Data SpatialPoints
+coordinates(meuse) <- ~ x + y
+
+# Clase de objetos
+class(meuse)
+class(meuse_sf)
+```
+
+- **Concentración de Zinc:**
+
+```{r}
+meuse_sf %>% 
+  ggplot() +
+  geom_sf(aes(color = zinc)) +
+  theme_bw() +
+  scale_color_viridis_c()
+```
+
+# Ubicación meuse
+
+```{r}
+library(leaflet)
+leaflet(as_Spatial(st_transform(meuse_sf, crs = 4326))) %>% addTiles() %>% addCircles()
+```
+
+
+# Variograma
+
+- [El Variograma](https://es.wikipedia.org/wiki/Variograma#:~:text=El%20variograma%20o%20semivariograma%20es,otro%20punto%20a%20diferentes%20distancias.) es una medida de variación entre valores a distintas distancias.
+- A mayor distancia se espera mayor variación.
+- El logaritmo se adiciona para garantizar la obtención de valores positivos.
+- Es posible modelar la variación en función de diferentes fuentes o factores, dando lugar con ello a diferentes variogramas.
+
+## Modelo Nulo
+
+
+
+```{r}
+#Modelo nulo
+variograma_nulo <- variogram(object = log(zinc) ~ 1, data = meuse)
+variograma_nulo
+```
+
+- **Resultados de tabla anterior:** la primera variable (np) proporciona información del número de puntos, es decir, que para la primera fila diremos que hay 57 puntos a una distancia (dist) de 79.29244 metros y la semi-varianza entre estos 57 puntos es 0.1234479 (gamma). El punto de mayor variación se da con 0.7033984 a una distancia de 1117.86 metros.
+
+```{r}
+variograma_nulo %>% 
+  ggplot(aes(x = dist, y = gamma)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Distancia (metros)", y = "Gamma (semi-varianza)")
+```
+
+## Comparando variogramas
+
+```{r}
+# Variogramas
+var_nulo <- variogram(log(zinc) ~ 1, data = meuse) %>% mutate(Modelo = "Nulo")
+var_spat <- variogram(log(zinc) ~ x + y, data = meuse) %>% mutate(Modelo = "Espacial")
+var_dist <- variogram(log(zinc) ~ dist, data = meuse) %>% mutate(Modelo = "Distancia")
+var_sqrt <- variogram(log(zinc) ~ sqrt(dist), data = meuse) %>% mutate(Modelo = "Raíz Distancia")
+
+# Uniendo resultados
+all_var <- list(var_nulo, var_spat, var_dist, var_sqrt) %>% 
+  reduce(bind_rows)
+all_var
+```
+
+- **Gráfico de variogramas:**
+
+```{r}
+all_var %>%
+  ggplot(aes(x = dist, y = gamma, color = Modelo)) +
+  geom_point(size = 1.7) +
+  theme_bw() +
+  labs(x = "Distancia (metros)", y = "Gamma (semi-varianza)")
+```
+
+# Ajuste de variograma
+
+- psill: meseta parcial. Estabilización de la semivarianza.
+- range: separación o distancia entre pares de puntos en la cual ya no hay dependencia espacial.
+- nugget: semivarianza esperada a la separación o distancia de 0m
+- Los valores de psill, range y nugget sirven como valores iniciales para el ajuste del modelo.
+
+```{r}
+ajuste_var <- fit.variogram(object = var_spat,
+                            model = vgm(psill = 1, model = "Sph", range =  700,
+                                        nugget =  1))
+ajuste_var
+```
+
+- **Resultados:** el *range* proporcionado por el modelo indica la distancia esperada donde se estabiliza la semivarianza. La suma de *psill* (0.08234213 + 0.38866509) dará como resultado el valor donde se evidencia o espera la "meseta" total (estabilización de la semivarianza). *Nugget* brinda información acerca de la semivarianza esperada a una distancia de 0 metros (intercepto). A continuación se muestra el gráfico del modelo ajustado:
+
+```{r}
+ggplot(variogramLine(ajuste_var, 1600), aes(x = dist, y = gamma)) +
+  geom_path() + 
+  geom_point(data = var_spat, color = "red") + 
+  geom_vline(xintercept = ajuste_var$range[2], lty = 2) + 
+  geom_text(x = ajuste_var$range[2], y = ajuste_var$psill[2]/2, label = "range") + 
+  theme_bw() +
+  geom_hline(yintercept = ajuste_var$psill[2] + ajuste_var$psill[1] , lty = 2) + 
+  geom_text(x = ajuste_var$range[2]/2, y = ajuste_var$psill[2] + ajuste_var$psill[1], label = "psill") +
+  geom_text(x = ajuste_var$range[1], y = ajuste_var$psill[1], label = "Nugget") +
+  ylim(c(0,max(var_spat$gamma)))
+```
+
+# Otros modelos
+
+```{r}
+# Modelo nulo
+ajuste_nulo <- fit.variogram(object = var_nulo,
+                             model = vgm(psill = 1, model = "Sph", range =  700,
+                                         nugget =  1))
+
+# Modelo con distancia
+ajuste_dist <- fit.variogram(object = var_dist,
+                            model = vgm(psill = 1, model = "Sph", range =  700,
+                                        nugget =  1))
+
+# Modelo con raíz cuadrada de la distancia
+ajuste_sqrt <- fit.variogram(object = var_sqrt,
+                            model = vgm(psill = 1, model = "Sph", range =  700,
+                                        nugget =  1))
+```
+
+- **Gráfico con cuatro modelos ajustados:**
+
+```{r}
+# Cuatro modelos
+Abn_fit_null <- variogramLine(ajuste_nulo, 1600) %>% mutate(Modelo = "Nulo")
+Abn_line_Spat <- variogramLine(ajuste_var, 1600) %>% mutate(Modelo = "Espacial")
+Abn_line_Dist <- variogramLine(ajuste_dist, 1600) %>% mutate(Modelo = "Distancia")
+Abn_line_Dist_sq <- variogramLine(ajuste_sqrt, 1600) %>% mutate(Modelo = "Raíz Distancia")
+
+# Unión de datos
+Abn_line <- list(Abn_fit_null, Abn_line_Spat, Abn_line_Dist, Abn_line_Dist_sq) %>%
+  reduce(bind_rows)
+
+ggplot(Abn_line, aes(x = dist, y = gamma)) + 
+  geom_path(aes(color = Modelo)) +
+  geom_point(data = all_var, aes(color = Modelo)) + 
+  theme_bw() +
+  scale_color_brewer(palette = "Set1")
+```
+
+# Kriging
+
+- [El krigeaje o regresión en procesos gaussianos](https://es.wikipedia.org/wiki/Krigeaje#:~:text=El%20krigeaje%2C%20krigeado%20o%20kriging,referencia%20usado%20en%20la%20estimaci%C3%B3n.) permite realizar interporlación a partir de un variograma previamente ajustado.
+- En este caso se usa la base de datos *meuse.grid* que tiene información que podrá ser utilizada para la interpolación. Las distancias del siguiente gráfico indican proximidad a una fuente hídrica.
+
+## Datos
+
+```{r}
+# Data inicial
+data("meuse.grid")
+
+# Conversión a sf
+meusegrid_sf <- meuse.grid %>% 
+  st_as_sf(coords = c(1, 2), crs = "+init=epsg:28992")
+
+# Gráfico
+meusegrid_sf %>% 
+  ggplot() +
+  geom_sf(aes(color = dist)) +
+  scale_color_viridis_c() +
+  theme_bw()
+```
+
+## Predicciones (interpolación)
+
+```{r}
+pred_spat <- krige(log(zinc) ~ 1, meuse_sf, meusegrid_sf, model = ajuste_var)
+class(pred_spat)
+pred_spat
+```
+
+- **Gráfico de predicciones:** como los datos están en logaritmos se usa la función exp() para obtener valores en las mismas unidades
+
+```{r}
+pred_spat %>% 
+  ggplot() +
+  geom_sf(aes(color = exp(var1.pred))) +
+  scale_color_viridis_c(name = "Zinc (predicho)")
+```
+
+- **Gráfico de variación en las predicciones:** el gráfico permite evidencicar lugares de mayor incertidumbre para la predicción.
+
+```{r}
+pred_spat %>% 
+  ggplot() +
+  geom_sf(aes(color = exp(var1.var))) +
+  scale_color_viridis_c(name = "")
+```
+
+## Todos los modelos
+
+```{r}
+Null_pred <- krige(log(zinc) ~ 1,  meuse_sf, meusegrid_sf, model = ajuste_nulo) %>%
+  mutate(Modelo = "Nulo")
+
+Spat_pred <- krige(log(zinc) ~ 1, meuse_sf, meusegrid_sf, model = ajuste_var) %>%
+  mutate(Modelo = "Espacial")
+
+Dist_pred <- krige(log(zinc) ~ 1,  meuse_sf, meusegrid_sf, model = ajuste_dist) %>% 
+  mutate(Modelo = "Distancia")
+
+Dist_sq_pred <- krige(log(zinc) ~ 1, meuse_sf, meusegrid_sf, model = ajuste_sqrt)  %>%
+  mutate(Modelo = "Raíz Distancia")
+
+Pred <- list(Null_pred, Spat_pred, Dist_pred, Dist_sq_pred) %>%
+  reduce(bind_rows)
+Pred
+```
+
+- **Predicciones:**
+
+```{r, fig.width=9}
+ggplot() +
+  geom_sf(data = Pred, aes(color = exp(var1.pred))) +
+  scale_color_viridis_c(name = "Zinc") +
+  facet_wrap(~Modelo)  + 
+  theme_bw()
+```
+
+- **Incertidumbre en predicciones:** el modelo de mayor incertidumbre es el modelo nulo.
+
+```{r, fig.width=9}
+ggplot() +
+  geom_sf(data = Pred, aes(color = exp(var1.var))) +
+  scale_color_viridis_c(name = "Zinc") +
+  facet_wrap(~Modelo)  + 
+  theme_bw()
+```
+
+# Mejor modelo
+
+- Una manera de seleccionar el modelo podría ser comparar la bondad de ajuste a través de una métrica que represente el error, por ejemplo, Raíz del Cuadrado Medio del Error (RSME - Root Square Mean Error).
+- También es posible implementar validación cruzada.
+- La función krige.cv permite ajustar modelos a través de validación cruzada.
+
+```{r, message=FALSE, warning=FALSE}
+Null_pred_cv <- krige.cv(log(zinc) ~ 1,  meuse_sf,
+                         model = ajuste_nulo, nfold = 5) %>%
+  mutate(Modelo = "Nulo")
+
+Spat_pred_cv <- krige.cv(log(zinc) ~ 1, meuse_sf,model = ajuste_var,
+                         nfold = 5) %>%
+  mutate(Modelo = "Espacial")
+
+Dist_pred_cv <- krige.cv(log(zinc) ~ 1,  meuse_sf, model = ajuste_dist,
+                         nfold = 5) %>% 
+  mutate(Modelo = "Distancia")
+
+Dist_sq_pred_cv <- krige.cv(log(zinc) ~ 1, meuse_sf, model = ajuste_sqrt,
+                         nfold = 5)  %>%
+  mutate(Modelo = "Raíz Distancia")
+
+Pred_cv <- list(Null_pred_cv, Spat_pred_cv, Dist_pred_cv, Dist_sq_pred_cv) %>%
+  reduce(bind_rows)
+```
+
+
+- **Predichos vs observados:**
+
+```{r}
+Pred_cv %>% 
+  ggplot(aes(x = var1.pred, y = observed)) +
+  geom_point() +
+  theme_bw() +
+  labs(x = "Predichos", y = "Observados")
+```
+
+- **Comparando modelos a través de RMSE:**
+
+```{r, message=FALSE}
+Pred_cv %>% 
+  as.data.frame() %>% 
+  group_by(Modelo) %>% 
+  summarise(RMSE = sqrt(sum(residual^2)/length(residual)))
+```
 
