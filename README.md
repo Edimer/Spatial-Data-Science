@@ -18,6 +18,14 @@ Repositorio para análisis de datos espaciales con R.
 library(sf)
 library(raster)
 library(rworldxtra)
+library(gstat)
+library(rgdal)
+library(sp)
+library(tidyverse)
+library(leaflet)
+library(leaflet.extras)
+library(mapedit)
+library(mapview)
 ```
 
 # Material
