@@ -38,8 +38,10 @@ El siguiente material lo he construido siguiendo las clases desde Youtube.
 
 # [SoilGrids](https://soilgrids.org/)
 
+
+- Material de apoyo en español para extracción y procesamiento de datos de suelo con R. Esta información podría servir al propósito de analizar zonas aptas para agricultura, conservación de flora o fauna y modelamiento de distribución de especies.
+
 <center>
 <img src = "https://i.ytimg.com/vi/Qda8TObnQaA/maxresdefault.jpg" />
 </center>
 
-- Material de apoyo en español para extracción y procesamiento de datos de suelo con R. Esta información podría servir al propósito de analizar zonas aptas para agricultura, conservación de flora o fauna y modelamiento de distribución de especies.
