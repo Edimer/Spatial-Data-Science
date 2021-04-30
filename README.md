@@ -28,10 +28,18 @@ library(mapedit)
 library(mapview)
 ```
 
-# Material
+# Material "SIG_R"
 
 El siguiente material lo he construido siguiendo las clases desde Youtube.
 - [SIG con R: Clase 01 - Introducción](https://rpubs.com/Edimer/673433)
 - [SIG con R: Clase 02 - Modelos con Raster](https://rpubs.com/Edimer/673524)
 - [SIG con R: Clase 03 - Mapas interactivos con Leaflet](https://rpubs.com/Edimer/673994)
 - [SIG con R: Clase 04 - Autocorrelación Espacial](https://rpubs.com/Edimer/675143)
+
+# [SoilGrids](https://soilgrids.org/)
+
+<center>
+<img src = "https://i.ytimg.com/vi/Qda8TObnQaA/maxresdefault.jpg" />
+</center>
+
+- Material de apoyo en español para extracción y procesamiento de datos de suelo con R. Esta información podría servir al propósito de analizar zonas aptas para agricultura, conservación de flora o fauna y modelamiento de distribución de especies.
